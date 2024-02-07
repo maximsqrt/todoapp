@@ -1,47 +1,82 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-class TaskItem extends StatefulWidget {
+void main() {
+  runApp(MyApp());
+}
+
+// Model class to represent a task item
+class Task {
+  String taskName;
+  bool isNote;
+
+  Task({required this.taskName, this.isNote = false});
+}
+
+// ChangeNotifier class to manage the state of the task list
+class TaskList extends ChangeNotifier {
+  List<Task> tasks = List.generate(10, (index) => Task(taskName: ''));
+
+  // Method to update the task name at a specific index
+  void updateTaskName(int index, String taskName) {
+    tasks[index].taskName = taskName;
+    notifyListeners(); // Notify listeners about the change
+  }
+
+  // Method to toggle the note status at a specific index
+  void toggleNoteStatus(int index) {
+    tasks[index].isNote = !tasks[index].isNote;
+    notifyListeners(); // Notify listeners about the change
+  }
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (context) => TaskList(), // Provide an instance of TaskList
+      child: MaterialApp(
+        title: 'To-Do List',
+        home: ToDoList(),
+      ),
+    );
+  }
+}
+
+class TaskItem extends StatelessWidget {
   final int index;
 
   TaskItem(this.index);
 
   @override
-  _TaskItemState createState() => _TaskItemState();
-}
-
-class _TaskItemState extends State<TaskItem> {
-  String task = '';
-  bool note = false;
-
-  @override
   Widget build(BuildContext context) {
-    Color textFieldColor = note ? Colors.green : Colors.white;
+    // Access the TaskList instance using Provider
+    final taskList = Provider.of<TaskList>(context);
+    final task = taskList.tasks[index];
 
     return ListTile(
       title: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10.0),
-          color: textFieldColor,
+          color: task.isNote ? Colors.green : Colors.white,
         ),
-        padding: EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(8.0),
         child: TextField(
           decoration: InputDecoration.collapsed(
-            hintText: 'Task ${widget.index + 1}',
+            hintText: 'Task ${index + 1}',
           ),
-          style: TextStyle(color: Colors.black), // Text color
+          style: const TextStyle(color: Colors.black), // Text color
           onChanged: (value) {
-            setState(() {
-              task = value;
-            });
+            // Update task name when text changes
+            taskList.updateTaskName(index, value);
           },
         ),
       ),
       trailing: Checkbox(
-        value: note,
+        value: task.isNote,
         onChanged: (value) {
-          setState(() {
-            note = value!;
-          });
+          // Toggle note status when checkbox is changed
+          taskList.toggleNoteStatus(index);
         },
       ),
     );
@@ -52,12 +87,12 @@ class ToDoList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color.fromARGB(255, 188, 142, 202),
+      backgroundColor: const Color.fromARGB(255, 188, 142, 202),
       appBar: GradientAppBar(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           colors: [Colors.blue, Colors.green],
         ),
-        title: Text('To-Do List', style: TextStyle(fontSize: 20)),
+        title: const Text('To-Do List', style: TextStyle(fontSize: 20)),
       ),
       body: ListView.builder(
         itemCount: 10,
@@ -104,10 +139,4 @@ class GradientAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Size get preferredSize => Size.fromHeight(barHeight);
-}
-
-void main() {
-  runApp(MaterialApp(
-    home: ToDoList(),
-  ));
 }
